@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src https://api.anthropic.com wss://api.deepgram.com https://*.workers.dev wss://*.workers.dev; object-src 'none'; base-uri 'none';">
+  <meta name="color-scheme" content="dark">
+  <title>Reply Assist</title>
+  <link rel="stylesheet" href="style.css">
+  <script type="module" src="plugin.js"></script>
+</head>
+<body>
+  <main class="app">
+    <header class="top">
+      <div class="brand">
+        <span class="mark" aria-hidden="true"></span>
+        <div>
+          <p class="studio">Nine Muses Studios</p>
+          <h1>Reply Assist</h1>
+        </div>
+      </div>
+      <span id="state" class="pill" data-tone="idle">Connecting</span>
+      <p id="pair" class="pair"></p>
+    </header>
+
+    <div class="columns">
+      <div class="col col-live">
+        <section class="hud-frame" aria-labelledby="hud-title">
+          <div class="hud-bar">
+            <span id="hud-title" class="eyebrow">On your glasses</span>
+            <span class="hud-dots" aria-hidden="true"></span>
+          </div>
+          <div class="hud" data-mode="text" aria-label="What the glasses show">
+            <p id="hud-header" class="hud-header">Press start, then just talk.</p>
+            <ol id="hud-replies" class="hud-replies"></ol>
+            <canvas id="hud-canvas" class="hud-canvas" width="600" height="350" aria-hidden="true"></canvas>
+          </div>
+        </section>
+
+        <section class="console" aria-label="Listening controls">
+          <div class="controls">
+            <button id="start" type="button" class="primary" disabled>Start listening</button>
+            <button id="calibrate" type="button" class="secondary" disabled>Calibrate my voice</button>
+            <button id="say-own" type="button" class="secondary" hidden>Say it in English</button>
+          </div>
+          <div class="meter-row">
+            <span class="meter-label" aria-hidden="true">Level</span>
+            <div class="meter" aria-hidden="true"><span id="meter-fill"></span></div>
+          </div>
+          <p id="status" class="status" role="status"></p>
+        </section>
+
+        <section class="panel convo" aria-labelledby="convo-title">
+          <h2 id="convo-title" class="eyebrow">Conversation <span class="eyebrow-note">newest first</span></h2>
+          <ol id="log" class="log"></ol>
+        </section>
+      </div>
+
+      <div class="col col-setup">
+        <details id="settings" class="sheet" open>
+          <summary><span class="sum-title">Settings</span><span class="sum-note">Set up top to bottom the first time</span></summary>
+          <form id="settings-form" autocomplete="off">
+
+            <fieldset class="step">
+              <legend><span class="step-n">1</span>Connection</legend>
+              <label>How Reply Assist reaches Claude
+                <select name="connection" id="connection">
+                  <option value="server">My Reply Assist server</option>
+                  <option value="direct">API keys on this phone (developer)</option>
+                </select>
+              </label>
+              <div data-conn="server" class="group">
+                <label>Server address
+                  <input name="serverUrl" type="url" placeholder="https://reply-assist.yourname.workers.dev" spellcheck="false">
+                </label>
+                <label>App token
+                  <input name="appToken" type="password" placeholder="From your server setup" spellcheck="false">
+                </label>
+              </div>
+              <div data-conn="direct" class="group">
+                <label>Claude API key
+                  <input name="claudeKey" type="password" placeholder="sk-ant-…" spellcheck="false">
+                </label>
+                <label>Deepgram API key <span class="hint">speech-to-text</span>
+                  <input name="deepgramKey" type="password" placeholder="Deepgram key" spellcheck="false">
+                </label>
+              </div>
+              <label>Model
+                <input name="model" type="text" spellcheck="false">
+              </label>
+              <p class="note">With your own server, API keys never touch this phone: it only holds an app token you can revoke. Developer mode keeps keys in this plugin's private storage and sends them only to Anthropic and Deepgram.</p>
+            </fieldset>
+
+            <fieldset class="step">
+              <legend><span class="step-n">2</span>Languages and mode</legend>
+              <label>Mode
+                <select name="mode" id="mode">
+                  <option value="translate">Translate and reply (another language)</option>
+                  <option value="assist">Q&amp;A assist (same language, answers from your notes)</option>
+                </select>
+              </label>
+              <div class="pair-fields">
+                <label>They speak
+                  <select name="theirLang" id="their-lang"></select>
+                </label>
+                <label data-for-mode="translate">You read
+                  <select name="myLang" id="my-lang"></select>
+                </label>
+              </div>
+              <label>Situation <span class="hint">optional, sharpens replies</span>
+                <textarea name="situation" rows="2" placeholder="Checking in at a hotel in Madrid / Product demo for investors"></textarea>
+              </label>
+              <label data-for-mode="assist">Your notes <span class="hint">key points, numbers, FAQs. Answers come from these.</span>
+                <textarea name="notes" rows="8" placeholder="Paste your talk notes, slide text, or a fact sheet here."></textarea>
+              </label>
+              <label data-for-mode="assist">Answers
+                <select name="assistKnowledge" id="assist-knowledge">
+                  <option value="notes">Only from my notes</option>
+                  <option value="general">My notes, then Claude's own knowledge (marked "verify")</option>
+                </select>
+              </label>
+            </fieldset>
+
+            <fieldset class="step">
+              <legend><span class="step-n">3</span>Replies</legend>
+              <label>Where replies come from
+                <select name="replyMode" id="reply-mode">
+                  <option value="hybrid">Phrasebook first, Claude when needed</option>
+                  <option value="phrasebook">Phrasebook only (no Claude)</option>
+                  <option value="claude">Claude every time</option>
+                </select>
+              </label>
+              <label class="check" data-for-mode="translate">
+                <input name="sayOwn" type="checkbox">
+                <span><strong>Say it in English</strong><span class="hint block">None of the replies fit? Double-press the temple button (or tap the button on this page), then say what you want in your own language. It's translated for you to read out. Double-press again to cancel. With this on, hold the button to pause. Uses Claude.</span></span>
+              </label>
+              <div class="group phrasebook">
+                <p id="phrasebook-out" class="readout"></p>
+                <div class="row">
+                  <button type="button" id="pb-build" class="secondary">Build phrasebook</button>
+                  <button type="button" id="pb-clear" class="ghost">Reset phrasebook</button>
+                </div>
+              </div>
+            </fieldset>
+
+            <fieldset class="step">
+              <legend><span class="step-n">4</span>Glasses</legend>
+              <label>Glasses display
+                <select name="display" id="display">
+                  <option value="drawn">Drawn: sized to fit, any script, highlights words</option>
+                  <option value="text">Text: the glasses' own font</option>
+                </select>
+              </label>
+              <label>Layout
+                <select name="layout" id="layout">
+                  <option value="stacked">Stacked: their words on top, replies below</option>
+                  <option value="side">Side by side: their words left, replies right</option>
+                </select>
+              </label>
+              <label class="check" data-for-mode="translate">
+                <input name="learning" type="checkbox">
+                <span><strong>Learning mode</strong><span class="hint block">Their original words above the translation, and each part of a reply on its own line: the reply, how to say it, what it means. Replies in another script always show how to say it.</span></span>
+              </label>
+            </fieldset>
+
+            <fieldset class="step">
+              <legend><span class="step-n">5</span>Voice</legend>
+              <p class="note">Tap <strong>Calibrate my voice</strong> and talk normally for a few seconds so Reply Assist can tell you apart from the other person.</p>
+              <p id="calib-out" class="readout"></p>
+              <label>Voice sensitivity <span id="margin-out" class="hint"></span>
+                <input name="marginDb" type="range" min="3" max="18" step="1">
+              </label>
+              <label>Auto-stop after silence <span class="hint">saves speech-to-text costs</span>
+                <select name="autoStopMin" id="auto-stop"></select>
+              </label>
+              <label class="check">
+                <input name="solo" type="checkbox">
+                <span><strong>Solo practice</strong><span class="hint block">Testing alone: everything you say counts as the other person, except saying a reply on screen, which picks it.</span></span>
+              </label>
+              <button type="button" id="reset-calib" class="ghost">Reset calibration</button>
+            </fieldset>
+
+            <div class="save-bar">
+              <button type="submit" class="primary">Save settings</button>
+            </div>
+          </form>
+        </details>
+
+        <details id="try" class="sheet">
+          <summary><span class="sum-title">Try it without the mic</span><span class="sum-note">Type lines instead of speaking</span></summary>
+          <form id="try-form" autocomplete="off">
+            <label>Type a line of conversation
+              <input name="line" type="text" placeholder="¿Se queda mucho tiempo en la ciudad?">
+            </label>
+            <div class="row">
+              <button type="submit" name="who" value="them" class="secondary them">They said</button>
+              <button type="submit" name="who" value="me" class="secondary me">I said</button>
+              <button type="submit" name="who" value="own" class="secondary me">Say it for me</button>
+            </div>
+            <p class="note">Runs the same Claude replies, reply matching and glasses display as live mode, with typing in place of speech. <strong>Say it for me</strong>: type what you want to say in your own language and get it in theirs.</p>
+          </form>
+        </details>
+
+        <details id="diagnostics" class="sheet">
+          <summary><span class="sum-title">Diagnostics</span><span class="sum-note">What each step did</span></summary>
+          <div class="sheet-body">
+            <pre id="diag-out" class="diag"></pre>
+            <div class="row">
+              <button type="button" id="diag-copy" class="secondary">Copy log</button>
+              <button type="button" id="diag-clear" class="ghost">Clear</button>
+            </div>
+            <p class="note">Microphone, speech-to-text, Claude, glasses. API keys are never included. Includes snippets of what was said.</p>
+          </div>
+        </details>
+      </div>
+    </div>
+  </main>
+</body>
+</html>

@@ -1,0 +1,13 @@
+Copyright (c) 2026 Khai Muse. All rights reserved.
+
+This source code is published so it can be read and reviewed. No license is
+granted to copy, modify, distribute, sublicense, or sell it, or to use it in
+other products or services, in whole or in part, without prior written
+permission from the copyright holder.
+
+Third-party components are not covered by this notice and keep their own
+licenses: the fonts in plugin/fonts/ (SIL Open Font License 1.1, license
+texts alongside them), and MemoMind's SDK and the Opus decoder, which are not
+included in this repository (see README.md).
+
+For permission or questions, contact the copyright holder through GitHub.

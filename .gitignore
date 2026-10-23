@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.DS_Store
+.env*
+
+# MemoMind SDK files: fetch with `npm run vendor`, never commit
+plugin/vendor/gm-plugin-web-sdk.esm.js
+plugin/vendor/opus-decoder.esm.js
+plugin/vendor/opus-decoder-LICENSE.txt

@@ -1,0 +1,16 @@
+{
+  "name": "reply-assist",
+  "version": "0.1.0",
+  "description": "MemoMind One plugin: live translation and suggested replies on your glasses",
+  "private": true,
+  "type": "module",
+  "license": "UNLICENSED",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.mjs",
+    "vendor": "node scripts/fetch-vendor.mjs",
+    "build": "node scripts/build.mjs"
+  }
+}

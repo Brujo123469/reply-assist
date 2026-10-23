@@ -1,0 +1,23 @@
+{
+  "id": "com.khai.reply-assist",
+  "name": "Reply Assist",
+  "version": "0.1.0",
+  "entry": "index.html",
+  "bridgeVersion": "2.0",
+  "schemaVersion": 2,
+  "permissionPolicyVersion": 1,
+  "permissions": [
+    { "name": "storage", "required": true, "reason": "Saves your settings, API keys and voice calibration on this phone." },
+    { "name": "display", "required": true, "reason": "Shows translations and reply suggestions on the glasses." },
+    { "name": "audio.capture", "required": true, "reason": "Listens to the conversation through the glasses microphone." },
+    { "name": "network", "required": true, "reason": "Sends audio to speech-to-text and text to Claude for replies." },
+    { "name": "device.events", "required": false, "reason": "Temple button: refresh replies, pause listening.", "scope": { "types": ["button", "connection"] } }
+  ],
+  "deviceRequirements": {
+    "preferredPluginId": "com.gm.example.web-bridge",
+    "protocols": [
+      { "id": "gm.scene", "minVersion": "1.0" },
+      { "id": "gm.device-events", "minVersion": "1.0" }
+    ]
+  }
+}

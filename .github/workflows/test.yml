@@ -1,0 +1,19 @@
+name: test
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 20
+      - name: Fetch MemoMind SDK files
+        run: |
+          git clone --depth 1 https://github.com/memomind-open/plugin-open-platform "$RUNNER_TEMP/plugin-open-platform"
+          npm run vendor -- "$RUNNER_TEMP/plugin-open-platform"
+      - run: npm test
